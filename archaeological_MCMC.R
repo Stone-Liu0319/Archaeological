@@ -1,3 +1,4 @@
+# title: MCMC to sample from the posterior in the archaeological data
 library(readxl)
 library(mvtnorm)
 
@@ -9,8 +10,12 @@ nr.new <- 192
 mod.dat <- all.dat[1:192,]
 old.dat <- all.dat[193:255,] 
 
-# discretize p
-S <- 83 # assign p by every 100 years (from=-7100, to=1100), there are S=83 p's in total.
+
+# y_M: D13C value in the modern data
+# y_A: D13C value in the archaeological data
+# lM: LAI value in the modern data
+# lower_tau: lower bound for "tau" in the archaeological data
+# upper_tau: upper bound for "tau" in the archaeological data
 
 y_M <- mod.dat$D13C
 y_A <- old.dat$D13C
@@ -24,6 +29,8 @@ b <- sqrt(var(lM[lM>0]))
 ## prior 
 
 ### tilde_p ~ AR(1)
+# discretize p
+S <- 83 # assign p by every 100 years (from=-7100, to=1100), there are S=83 p's in total.
 logprior_tildep <- function(tilde_p, theta, v){
   logdensity <- dnorm(tilde_p[1], 0, sqrt(v/(1-theta^2)), log=TRUE)
   for(i in 1:(S-1)){
@@ -119,6 +126,7 @@ logposterior <- function(alpha, beta, sigma2_0, lA, tau, tilde_p, mu, s, theta, 
            logprior_tau(tau) + logprior_tildep(tilde_p, theta, v) + logprior_v(v) + logprior_theta(theta))
 }
 
+# update one variable in one iteration
 update_all <- function(alpha, beta, sigma2_0, lA, tau, tilde_p, mu, s, theta, v,
                        rw_alpha, rw_beta, rw_sigma2_0, rw_tildep, rw_mu, rw_s, rw_theta, rw_v){
   
@@ -335,3 +343,6 @@ sampling_all <- function(iter, thin, rw_alpha, rw_beta, rw_sigma2_0, rw_tildep, 
        "lA"=lA.samples, "tau"=tau.samples, "tilde_p"=tilde_p.samples, "mu"=mu.samples, "s"=s.samples,
        "theta"=theta.samples, "v"=v.samples, "llk"=llk.samples)
 }
+
+# experiment
+result_discrete <- sampling_all(2000000, 2000, 0.5, 0.2, 0.2, 0.5, 0.5, 0.5, 0.2, 0.5)
